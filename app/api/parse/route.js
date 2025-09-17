@@ -5,43 +5,31 @@ import { JSDOM } from "jsdom";
 const UserAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
 
-export async function OPTIONS(request) {
-  const origin = request.headers.get("origin") || "*";
+const allowHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
 
-  return new NextResponse(null, {
-    headers: {
-      "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
-    },
-  });
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: allowHeaders });
 }
 
 export async function POST(request) {
-  const origin = request.headers.get("origin") || "*";
-  const headers = {
-    "Access-Control-Allow-Origin": origin,
-    "Content-Type": "application/json",
-  };
-
   try {
-    const params = await request.json();
-    const result = await parseLanzouUrl(params);
-    return NextResponse.json(result, { headers });
+    const body = await request.json();
+    const result = await parseLanzouUrl(body);
+    const res = NextResponse.json(result);
+    Object.entries(allowHeaders).forEach(([k, v]) => res.headers.set(k, v));
+    return res;
   } catch (error) {
     console.error("API错误:", error);
-    return NextResponse.json(
-      {
-        code: 1,
-        msg: "服务器错误",
-        error: error.message || error.toString(),
-      },
-      {
-        status: 500,
-        headers,
-      }
+    const res = NextResponse.json(
+      { code: 1, msg: "服务器错误", error: error.message },
+      { status: 500 }
     );
+    Object.entries(allowHeaders).forEach(([k, v]) => res.headers.set(k, v));
+    return res;
   }
 }
 
