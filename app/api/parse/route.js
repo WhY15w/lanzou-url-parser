@@ -4,12 +4,25 @@ import { JSDOM } from "jsdom";
 
 const UserAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
+
+export async function OPTIONS(request) {
+  const origin = request.headers.get("origin") || "*";
+
+  return new NextResponse(null, {
+    headers: {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+}
+
 export async function POST(request) {
   const origin = request.headers.get("origin") || "*";
   const headers = {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Content-Type": "application/json",
   };
 
   try {
@@ -24,21 +37,12 @@ export async function POST(request) {
         msg: "服务器错误",
         error: error.message || error.toString(),
       },
-      { headers }
+      {
+        status: 500,
+        headers,
+      }
     );
   }
-}
-
-export async function OPTIONS(request) {
-  const origin = request.headers.get("origin") || "*";
-  return new Response(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
 }
 
 /**
