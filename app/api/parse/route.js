@@ -6,6 +6,16 @@ const UserAgent =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
 
 export async function POST(request) {
+  // 允许跨域请求
+  const origin = request.headers.get("origin") || "*";
+  const headers = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+  if (request.method === "OPTIONS") {
+    return new Response(null, { headers });
+  }
   try {
     const params = await request.json();
     const result = await parseLanzouUrl(params);
