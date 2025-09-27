@@ -43,7 +43,7 @@ export async function POST(request) {
 async function parseLanzouUrl(params) {
   const { url: inputUrl1, pwd, type, n: rename } = params;
   if (!inputUrl1) return { code: 1, msg: "请输入URL" };
-  const inputUrl = "https://www.lanzouf.com"+inputUrl1.split(".com/")[1]
+  const inputUrl = "https://www.lanzouf.com/"+inputUrl1.split(".com/")[1]
 
   try {
     const baseUrl = inputUrl.split(".com/")[0] + ".com";
