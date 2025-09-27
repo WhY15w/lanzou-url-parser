@@ -56,7 +56,7 @@ async function parseLanzouUrl(params) {
       return { code: 1, msg: "页面无内容" };
     }
 
-    return {msg:firstResponse.data,code:1}
+   // return {msg:firstResponse.data,code:1}
     if (firstResponse.data.includes("文件取消分享了")) {
       return { code: 1, msg: "文件取消分享了" };
     }
