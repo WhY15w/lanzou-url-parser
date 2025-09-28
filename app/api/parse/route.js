@@ -14,14 +14,14 @@ const allowHeaders = {
 // 创建可复用的axios实例，用于处理cookie
 const axiosInstance = axios.create({
   withCredentials: true, // 自动处理cookie
-  timeout: 10000
+  timeout: 10000,
 });
 
 // 存储全局cookie
-let globalCookies = '';
+let globalCookies = "";
 
 // 请求拦截器处理cookie
-axiosInstance.interceptors.request.use(config => {
+axiosInstance.interceptors.request.use((config) => {
   if (globalCookies) {
     config.headers.Cookie = globalCookies;
   }
@@ -29,10 +29,10 @@ axiosInstance.interceptors.request.use(config => {
 });
 
 // 响应拦截器更新cookie
-axiosInstance.interceptors.response.use(response => {
-  const setCookie = response.headers['set-cookie'];
+axiosInstance.interceptors.response.use((response) => {
+  const setCookie = response.headers["set-cookie"];
   if (setCookie && setCookie.length) {
-    globalCookies = setCookie.map(c => c.split(';')[0]).join('; ');
+    globalCookies = setCookie.map((c) => c.split(";")[0]).join("; ");
   }
   return response;
 });
@@ -48,8 +48,8 @@ export async function POST(request) {
     }
 
     // 重置全局cookie
-    globalCookies = '';
-    
+    globalCookies = "";
+
     const body = await request.json();
     const result = await parseLanzouUrl(body);
     const res = NextResponse.json(result);
@@ -78,46 +78,52 @@ async function parseLanzouUrl(params) {
   }
 
   // 支持多 baseUrl 尝试
-  const baseUrls = ["https://www.lanzoux.com", "https://www.lanzouf.com"];
+  const baseUrls = [
+    "https://www.lanzoux.com",
+    "https://www.lanzouf.com",
+    "https://www.lanzouj.com",
+    "https://www.lanzouu.com",
+    "https://www.lanzouw.com",
+  ];
   let lastError = null;
   for (const baseUrl of baseUrls) {
     try {
       const inputUrl = baseUrl + url.split(".com")[1];
-      
+
       // 先访问主页获取初始cookie
       await getInitialCookies(baseUrl);
-      
+
       // Step 1: 初次请求
       const firstResponse = await axiosInstance.get(inputUrl, {
         headers: getHeaders(inputUrl),
       });
-      
+
       if (!firstResponse.data) {
         lastError = { code: 1, msg: "页面无内容" };
         continue;
       }
-      
+
       if (firstResponse.data.includes("文件取消分享了")) {
         lastError = { code: 1, msg: "文件取消分享了" };
         continue;
       }
-      
+
       // 检查是否需要生成acw_sc_v2 cookie
-      if (firstResponse.data.includes('acw_sc__v2')) {
+      if (firstResponse.data.includes("acw_sc__v2")) {
         await handleAcwScCookie(firstResponse.data, baseUrl);
       }
-      
+
       const dom = new JSDOM(firstResponse.data);
       const document = dom.window.document;
-      
+
       // 提取文件名、大小
       let fileName = extractFileName(document);
       const fileSize = extractFileSize(document);
-      
+
       // Step 2: 判断是否需要密码
       if (firstResponse.data.includes("function down_p()")) {
         if (!pwd) return { code: 1, msg: "请输入分享密码" };
-        
+
         // 获取 sign 和 fileId
         const cleanCode = firstResponse.data.replace(/\/\*[\s\S]*?\*\//g, "");
         const sign = matchOne(cleanCode, /'sign':'(.*?)',/);
@@ -125,24 +131,24 @@ async function parseLanzouUrl(params) {
           cleanCode,
           /url\s*:\s*'\/ajaxm\.php\?file=(\d+)(?=[^\/]*')/
         );
-        
+
         if (!sign || !fileId) {
           lastError = { code: 1, msg: "获取文件标识失败" };
           continue;
         }
-        
+
         const postResult = await getAjaxmResult(baseUrl, fileId, {
           action: "downprocess",
           sign,
           p: pwd,
           kd: 1,
         });
-        
+
         if (postResult.zt !== 1) {
           lastError = { code: 1, msg: postResult.inf || "解析失败" };
           continue;
         }
-        
+
         fileName = postResult.inf || fileName;
         return await handleFinalUrl(postResult, {
           fileName,
@@ -151,46 +157,46 @@ async function parseLanzouUrl(params) {
           type,
         });
       }
-      
+
       // Step 3: 无密码情况
       const iframeSrc = document.querySelector("iframe")?.src;
       if (!iframeSrc) {
         lastError = { code: 1, msg: "无法解析下载页面" };
         continue;
       }
-      
+
       const iframeResponse = await axiosInstance.get(`${baseUrl}${iframeSrc}`, {
         headers: getHeaders(inputUrl),
       });
-      
+
       // 处理iframe页面可能需要的cookie
-      if (iframeResponse.data.includes('acw_sc__v2')) {
+      if (iframeResponse.data.includes("acw_sc__v2")) {
         await handleAcwScCookie(iframeResponse.data, baseUrl);
       }
-      
+
       const sign = matchOne(iframeResponse.data, /wp_sign = '(.*?)'/);
       const fileId = matchOne(
         iframeResponse.data.replace(`//url : '/ajaxm.php?file=1',//`, ""),
         /url\s*:\s*'\/ajaxm\.php\?file=(\d+)(?=[^\/]*')/
       );
-      
+
       if (!sign || !fileId) {
         lastError = { code: 1, msg: "获取文件标识失败" };
         continue;
       }
-      
+
       const postResult = await getAjaxmResult(baseUrl, fileId, {
         action: "downprocess",
         signs: "?ctdf",
         sign,
         kd: 1,
       });
-      
+
       if (postResult.zt !== 1) {
         lastError = { code: 1, msg: postResult.inf || "解析失败" };
         continue;
       }
-      
+
       return await handleFinalUrl(postResult, {
         fileName,
         fileSize,
@@ -215,7 +221,7 @@ async function parseLanzouUrl(params) {
 async function getInitialCookies(baseUrl) {
   try {
     await axiosInstance.get(baseUrl, {
-      headers: getHeaders(baseUrl)
+      headers: getHeaders(baseUrl),
     });
   } catch (error) {
     console.warn("获取初始cookie失败:", error.message);
@@ -233,22 +239,24 @@ async function handleAcwScCookie(html, baseUrl) {
       console.warn("未找到arg1参数，无法生成acw_sc_v2 cookie");
       return;
     }
-    
+
     const arg1 = arg1Match[1];
     const acwScV2 = acw_sc_v2_simple(arg1);
-    
+
     // 更新全局cookie
-    if (globalCookies.includes('acw_sc__v2=')) {
-      globalCookies = globalCookies.replace(/acw_sc__v2=[^;]+/, `acw_sc__v2=${acwScV2}`);
+    if (globalCookies.includes("acw_sc__v2=")) {
+      globalCookies = globalCookies.replace(
+        /acw_sc__v2=[^;]+/,
+        `acw_sc__v2=${acwScV2}`
+      );
     } else {
       globalCookies += `; acw_sc__v2=${acwScV2}`;
     }
-    
+
     // 用新cookie再次请求确认
     await axiosInstance.get(baseUrl, {
-      headers: getHeaders(baseUrl)
+      headers: getHeaders(baseUrl),
     });
-    
   } catch (error) {
     console.error("生成acw_sc_v2 cookie失败:", error.message);
   }
@@ -258,10 +266,13 @@ async function handleAcwScCookie(html, baseUrl) {
  * cookie生成函数
  */
 function acw_sc_v2_simple(arg1) {
-  const posList = [15,35,29,24,33,16,1,38,10,9,19,31,40,27,22,23,25,13,6,11,39,18,20,8,14,21,32,26,2,30,7,4,17,5,3,28,34,37,12,36];
-  const mask = '3000176000856006061501533003690027800375';
-  const outPutList = arrayFill(0, 40, '');
-  
+  const posList = [
+    15, 35, 29, 24, 33, 16, 1, 38, 10, 9, 19, 31, 40, 27, 22, 23, 25, 13, 6, 11,
+    39, 18, 20, 8, 14, 21, 32, 26, 2, 30, 7, 4, 17, 5, 3, 28, 34, 37, 12, 36,
+  ];
+  const mask = "3000176000856006061501533003690027800375";
+  const outPutList = arrayFill(0, 40, "");
+
   for (let i = 0; i < arg1.length; i++) {
     const char = arg1[i];
     for (let j = 0; j < posList.length; j++) {
@@ -270,18 +281,20 @@ function acw_sc_v2_simple(arg1) {
       }
     }
   }
-  
-  const arg2 = outPutList.join('');
-  let result = '';
+
+  const arg2 = outPutList.join("");
+  let result = "";
   const length = Math.min(arg2.length, mask.length);
-  
+
   for (let i = 0; i < length; i += 2) {
     const strHex = arg2.substr(i, 2);
     const maskHex = mask.substr(i, 2);
-    const xorResult = (parseInt(strHex, 16) ^ parseInt(maskHex, 16)).toString(16);
-    result += xorResult.padStart(2, '0');
+    const xorResult = (parseInt(strHex, 16) ^ parseInt(maskHex, 16)).toString(
+      16
+    );
+    result += xorResult.padStart(2, "0");
   }
-  
+
   return result;
 }
 
@@ -342,7 +355,11 @@ async function resolveFinalUrl(url) {
     return res.headers.location || url;
   } catch (error) {
     // 如果HEAD请求失败，尝试用GET请求获取重定向
-    if (error.response && error.response.status >= 300 && error.response.status < 400) {
+    if (
+      error.response &&
+      error.response.status >= 300 &&
+      error.response.status < 400
+    ) {
       return error.response.headers.location || url;
     }
     console.error("解析最终URL失败:", error.message);
