@@ -346,8 +346,7 @@ async function handleFinalUrl(data, { fileName, fileSize, rename, type }) {
  * 通过 HEAD 请求解析跳转后的直链
  */
 async function resolveFinalUrl(url, redirectCount = 0) {
-  console.error(`解析最终URL: ${url}, 重定向次数: ${redirectCount}`);
-  const maxRedirects = 10; // 最大重定向次数，防止无限循环
+  const maxRedirects = 10;
 
   // 如果达到最大重定向次数，返回当前URL
   if (redirectCount >= maxRedirects) {
@@ -365,9 +364,10 @@ async function resolveFinalUrl(url, redirectCount = 0) {
     // 如果有重定向，递归跟踪
     if (res.headers.location) {
       const nextUrl = res.headers.location;
-      console.log(`重定向 ${redirectCount + 1}: ${url} -> ${nextUrl}`);
+      console.error(`重定向 ${redirectCount + 1}: ${url} -> ${nextUrl}`);
       return await resolveFinalUrl(nextUrl, redirectCount + 1);
     }
+    console.error(`最终URL: ${url}`);
 
     // 没有重定向，返回当前URL
     return url;
@@ -380,7 +380,7 @@ async function resolveFinalUrl(url, redirectCount = 0) {
     ) {
       const nextUrl = error.response.headers.location;
       if (nextUrl) {
-        console.log(
+        console.error(
           `重定向 ${redirectCount + 1} (通过错误处理): ${url} -> ${nextUrl}`
         );
         return await resolveFinalUrl(nextUrl, redirectCount + 1);
