@@ -355,8 +355,9 @@ async function resolveFinalUrl(url, redirectCount = 0) {
   }
 
   try {
-    const res = await axiosInstance.head(url, {
+    const res = await axiosInstance.get(url, {
       headers: getHeaders(url, new URL(url).hostname),
+      responseType: "stream", // 不下载内容
       maxRedirects: 0,
       validateStatus: (status) => status >= 200 && status < 400,
     });
@@ -365,7 +366,9 @@ async function resolveFinalUrl(url, redirectCount = 0) {
 
     // 如果有重定向，递归跟踪
     if (res.headers.location) {
-      const nextUrl = res.headers.location;
+      const nextUrl = res.headers.location.startsWith("http")
+        ? res.headers.location
+        : new URL(res.headers.location, url).href;
       console.error(`重定向 ${redirectCount + 1}: ${url} -> ${nextUrl}`);
       return await resolveFinalUrl(nextUrl, redirectCount + 1);
     }
@@ -380,7 +383,7 @@ async function resolveFinalUrl(url, redirectCount = 0) {
       error.response.status >= 300 &&
       error.response.status < 400
     ) {
-      const nextUrl = error.response.headers.location;
+      const nextUrl = new URL(error.response.headers.location, url).href;
       if (nextUrl) {
         console.error(
           `重定向 ${redirectCount + 1} (通过错误处理): ${url} -> ${nextUrl}`
@@ -441,6 +444,9 @@ function getHeaders(referer, host = "") {
     Accept: "*/*",
     "Accept-Language": "zh-cn",
     Host: host,
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Dest": "document",
   };
 }
 
@@ -486,5 +492,3 @@ function randIP() {
     Math.random() * 255
   )}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
 }
-
-export const runtime = "nodejs";
