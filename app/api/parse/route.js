@@ -361,6 +361,8 @@ async function resolveFinalUrl(url, redirectCount = 0) {
       validateStatus: (status) => status >= 200 && status < 400,
     });
 
+    console.error(res.status, res.headers);
+
     // 如果有重定向，递归跟踪
     if (res.headers.location) {
       const nextUrl = res.headers.location;
