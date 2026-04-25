@@ -1,6 +1,6 @@
 # 蓝奏云直链解析工具
 
-一个基于 Next.js 的蓝奏云分享链接直链解析工具，可以快速获取文件的真实下载地址。
+一个基于 Next.js 16 的蓝奏云分享链接直链解析工具，可以快速获取文件的真实下载地址。
 
 ## ✨ 功能特性
 
@@ -17,11 +17,11 @@
 
 ## 🛠️ 技术栈
 
-- **框架**: Next.js 15
+- **框架**: Next.js 16
 - **样式**: Tailwind CSS
 - **图标**: Lucide React
 - **HTTP 客户端**: Axios
-- **DOM 解析**: JSDOM
+- **DOM 解析**: Cheerio
 
 ## 📦 安装与运行
 
@@ -38,10 +38,10 @@ git clone <repository-url>
 cd lanzou-url-parser
 
 # 安装依赖
-npm install
+pnpm install
 
 # 启动开发服务器
-npm run dev
+pnpm run dev
 ```
 
 访问 [http://localhost:3000](http://localhost:3000) 查看应用。
@@ -50,10 +50,10 @@ npm run dev
 
 ```bash
 # 构建项目
-npm run build
+pnpm run build
 
 # 启动生产服务器
-npm start
+pnpm start
 ```
 
 ## 🚀 使用方法

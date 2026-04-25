@@ -9,10 +9,22 @@ import {
   AlertCircleIcon,
 } from "lucide-react";
 
+type ParseResult = {
+  downUrl: string;
+  name?: string;
+  filesize?: string;
+};
+
+type ParseResponse = {
+  code: number;
+  msg?: string;
+  data?: ParseResult;
+};
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [password, setPassword] = useState("");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<ParseResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -44,11 +56,12 @@ export default function Home() {
       });
 
       const data = await response.json();
+      const parsedData = data as ParseResponse;
 
-      if (data.code === 0) {
-        setResult(data.data);
+      if (parsedData.code === 0) {
+        setResult(parsedData.data ?? null);
       } else {
-        setError(data.msg || "解析失败，请重试");
+        setError(parsedData.msg || "解析失败，请重试");
       }
     } catch (err) {
       console.error("解析错误:", err);
@@ -72,7 +85,7 @@ export default function Home() {
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleParse();
     }
@@ -103,7 +116,7 @@ export default function Home() {
                 id="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="例如: https://xxx.lanzouo.com/xxxxxxx"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all"
               />
@@ -120,7 +133,7 @@ export default function Home() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="输入分享密码"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all"
               />

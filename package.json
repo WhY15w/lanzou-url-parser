@@ -1,27 +1,29 @@
 {
-  "name": "lanzou-parser",
-  "version": "1.0.0",
+  "name": "lanzou-url-parser",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint"
   },
   "dependencies": {
-    "axios": "^1.15.1",
+    "axios": "^1.15.2",
     "cheerio": "^1.2.0",
-    "lucide-react": "^0.540.0",
-    "next": "15.4.8",
-    "nextjs-toploader": "^3.9.17",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "lucide-react": "^1.11.0",
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
-    "@types/node": "25.5.0",
-    "@types/react": "19.2.14",
+    "@types/node": "^20.19.39",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "16.2.4",
     "tailwindcss": "^4.2.4",
-    "typescript": "6.0.2"
+    "typescript": "^5.9.3"
   }
 }
