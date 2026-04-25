@@ -9,15 +9,11 @@ const allowHeaders = {
 };
 
 export async function OPTIONS() {
-  return NextResponse.next();
+  return NextResponse.json({}, { headers: allowHeaders });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    if (request.method === "OPTIONS") {
-      return NextResponse.next();
-    }
-
     const body = await request.json();
     const result = await parseLanzouUrl(body);
     const res = NextResponse.json(result);
