@@ -7,7 +7,7 @@ import {
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 
 const UserAgent =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
 
 /**
  * 创建带有 acw_sc__v2 自动处理的 HTTP 客户端

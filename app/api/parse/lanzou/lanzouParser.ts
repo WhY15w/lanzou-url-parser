@@ -69,12 +69,18 @@ async function parseLanzouUrl(params: {
           continue;
         }
 
-        const postResult = await getAjaxmResult(client, baseUrl, fileId, {
-          action: "downprocess",
-          sign,
-          p: pwd,
-          kd: 1,
-        });
+        const postResult = await getAjaxmResult(
+          client,
+          baseUrl,
+          baseUrl,
+          fileId,
+          {
+            action: "downprocess",
+            sign,
+            p: pwd,
+            kd: 1,
+          },
+        );
 
         if (postResult.zt !== 1) {
           lastError = { code: 1, msg: postResult.inf || "解析失败" };
@@ -102,22 +108,33 @@ async function parseLanzouUrl(params: {
         { headers: getHeaders(inputUrl) },
       );
 
+      const signs = matchOne(iframeResponse.data, /ajaxdata = '(.*?)'/);
       const sign = matchOne(iframeResponse.data, /wp_sign = '(.*?)'/);
       const fileId = matchOne(
         iframeResponse.data.replace(`//url : '/ajaxm.php?file=1',//`, ""),
         /url\s*:\s*'\/ajaxm\.php\?file=(\d+)(?=[^/]*')/,
       );
-      if (!sign || !fileId) {
+      if (!sign || !fileId || !signs) {
         lastError = { code: 1, msg: "获取文件标识失败" };
         continue;
       }
 
-      const postResult = await getAjaxmResult(client, baseUrl, fileId, {
-        action: "downprocess",
-        signs: "?ctdf",
-        sign,
-        kd: 1,
-      });
+      const postResult = await getAjaxmResult(
+        client,
+        baseUrl,
+        iframeSrc,
+        fileId,
+        {
+          action: "downprocess",
+          websignkey: signs,
+          signs,
+          sign,
+          websign: "",
+          kd: 1,
+          ves: 1,
+        },
+      );
+
       if (postResult.zt !== 1) {
         lastError = { code: 1, msg: postResult.inf || "解析失败" };
         continue;
@@ -168,6 +185,7 @@ async function getInitialCookies(
 async function getAjaxmResult(
   client: LanzouClient,
   baseUrl: string,
+  iframeSrc: string,
   fileId: string,
   payload: Record<string, string | number>,
 ): Promise<AjaxmResponse> {
@@ -179,7 +197,15 @@ async function getAjaxmResult(
         Object.entries(payload).map(([k, v]) => [k, String(v)]),
       ),
     ),
-    { headers: getHeaders(baseUrl) },
+    {
+      headers: {
+        ...getHeaders(`${baseUrl}${iframeSrc}`),
+        "content-type": "application/x-www-form-urlencoded",
+        Accept: "application/json, text/javascript, */*",
+        origin: baseUrl,
+        "x-requested-with": "XMLHttpRequest",
+      },
+    },
   );
   return res.data as AjaxmResponse;
 }
