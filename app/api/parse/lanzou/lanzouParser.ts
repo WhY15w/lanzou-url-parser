@@ -59,7 +59,7 @@ async function parseLanzouUrl(params: {
         if (!pwd) return { code: 1, msg: "请输入分享密码" };
 
         const cleanCode = firstResponse.data.replace(/\/\*[\s\S]*?\*\//g, "");
-        const sign = matchOne(cleanCode, /'sign':'(.*?)',/);
+        const sign = extractSign(cleanCode);
         const fileId = matchOne(
           cleanCode,
           /url\s*:\s*'\/ajaxm\.php\?file=(\d+)(?=[^/]*')/,
@@ -295,6 +295,29 @@ function extractFileSize($: cheerio.CheerioAPI): string {
 function matchOne(text: string, regex: RegExp): string | null {
   const m = text.match(regex);
   return m?.[1] ?? null;
+}
+
+/**
+ * 从页面脚本中提取 downprocess 请求的 sign 参数
+ * 新页面把 sign 存进变量再引用（var isngis = 'xxx'; ... 'sign':isngis,），
+ * 旧页面直接内联（'sign':'xxx',），两种都兼容
+ */
+function extractSign(code: string): string | null {
+  // 旧版：sign 内联在 ajax data 里
+  const inline = matchOne(code, /'sign':'(.*?)',/);
+  if (inline) return inline;
+
+  // 新版：sign 引用变量，先取变量名，再取其最后一次非空赋值
+  const varName = matchOne(code, /'sign':\s*([A-Za-z_$][\w$]*)\s*,/);
+  if (!varName) return null;
+
+  const varRegex = new RegExp(`var\\s+${varName}\\s*=\\s*'([^']*)'`, "g");
+  const values: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = varRegex.exec(code)) !== null) {
+    values.push(m[1]!);
+  }
+  return values.filter((v) => v).pop() ?? null;
 }
 
 export { parseLanzouUrl };
