@@ -60,20 +60,17 @@ async function parseLanzouUrl(params: {
 
         const cleanCode = firstResponse.data.replace(/\/\*[\s\S]*?\*\//g, "");
         const sign = extractSign(cleanCode);
-        const fileId = matchOne(
-          cleanCode,
-          /url\s*:\s*'\/ajaxm\.php\?file=(\d+)(?=[^/]*')/,
-        );
-        if (!sign || !fileId) {
+        const fileInfo = extractAjaxFileInfo(cleanCode);
+        if (!sign || !fileInfo) {
           lastError = { code: 1, msg: "获取文件标识失败" };
           continue;
         }
 
-        const postResult = await getAjaxmResult(
+        const postResult = await getAjaxResult(
           client,
           baseUrl,
-          baseUrl,
-          fileId,
+          inputUrl,
+          fileInfo,
           {
             action: "downprocess",
             sign,
@@ -110,20 +107,17 @@ async function parseLanzouUrl(params: {
 
       const signs = matchOne(iframeResponse.data, /ajaxdata = '(.*?)'/);
       const sign = matchOne(iframeResponse.data, /wp_sign = '(.*?)'/);
-      const fileId = matchOne(
-        iframeResponse.data.replace(`//url : '/ajaxm.php?file=1',//`, ""),
-        /url\s*:\s*'\/ajaxm\.php\?file=(\d+)(?=[^/]*')/,
-      );
-      if (!sign || !fileId || !signs) {
+      const fileInfo = extractAjaxFileInfo(iframeResponse.data);
+      if (!sign || !fileInfo || !signs) {
         lastError = { code: 1, msg: "获取文件标识失败" };
         continue;
       }
 
-      const postResult = await getAjaxmResult(
+      const postResult = await getAjaxResult(
         client,
         baseUrl,
         iframeSrc,
-        fileId,
+        fileInfo,
         {
           action: "downprocess",
           websignkey: signs,
@@ -180,16 +174,16 @@ async function getInitialCookies(
 }
 
 /**
- * 获取 ajaxm 结果（自动处理 acw_sc__v2）
+ * 获取 ajaxfile/ajaxm 结果（自动处理 acw_sc__v2）
  */
-async function getAjaxmResult(
+async function getAjaxResult(
   client: LanzouClient,
   baseUrl: string,
-  iframeSrc: string,
-  fileId: string,
+  refererPath: string,
+  fileInfo: { path: string; fileId: string },
   payload: Record<string, string | number>,
 ): Promise<AjaxmResponse> {
-  const postUrl = `${baseUrl}/ajaxm.php?file=${fileId}`;
+  const postUrl = `${baseUrl}${fileInfo.path}${fileInfo.fileId}`;
   const res = await client.postWithAcwRetry(
     postUrl,
     new URLSearchParams(
@@ -199,7 +193,7 @@ async function getAjaxmResult(
     ),
     {
       headers: {
-        ...getHeaders(`${baseUrl}${iframeSrc}`),
+        ...getHeaders(`${baseUrl}${refererPath}`),
         "content-type": "application/x-www-form-urlencoded",
         Accept: "application/json, text/javascript, */*",
         origin: baseUrl,
@@ -295,6 +289,28 @@ function extractFileSize($: cheerio.CheerioAPI): string {
 function matchOne(text: string, regex: RegExp): string | null {
   const m = text.match(regex);
   return m?.[1] ?? null;
+}
+
+/**
+ * 从页面脚本中提取 ajaxfile/ajaxm 接口路径与文件 id
+ * 新版页面统一走 /ajaxfile.php，旧版为 /ajaxm.php，两种都兼容；
+ * 同时跳过旧模板中被注释掉的示例行（//url : '/ajaxm.php?file=1',//）
+ */
+function extractAjaxFileInfo(
+  code: string,
+): { path: string; fileId: string } | null {
+  const regex = /url\s*:\s*'(\/ajax[a-z]*\.php\?file=)(\d+)/g;
+  let m: RegExpExecArray | null;
+  let result: { path: string; fileId: string } | null = null;
+
+  while ((m = regex.exec(code)) !== null) {
+    const prefix = code.slice(Math.max(0, m.index - 2), m.index);
+
+    if (prefix.includes("//")) continue;
+    result = { path: m[1], fileId: m[2] };
+  }
+
+  return result;
 }
 
 /**
