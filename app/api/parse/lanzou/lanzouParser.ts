@@ -183,7 +183,10 @@ async function getAjaxResult(
   fileInfo: { path: string; fileId: string },
   payload: Record<string, string | number>,
 ): Promise<AjaxmResponse> {
-  const postUrl = `${baseUrl}${fileInfo.path}${fileInfo.fileId}`;
+  // 新版页面返回跨域绝对地址（apifile.lanzouw.com），不能再拼 baseUrl
+  const postUrl = /^https?:\/\//.test(fileInfo.path)
+    ? `${fileInfo.path}${fileInfo.fileId}`
+    : `${baseUrl}${fileInfo.path}${fileInfo.fileId}`;
   const res = await client.postWithAcwRetry(
     postUrl,
     new URLSearchParams(
@@ -294,12 +297,15 @@ function matchOne(text: string, regex: RegExp): string | null {
 /**
  * 从页面脚本中提取 ajaxfile/ajaxm 接口路径与文件 id
  * 新版页面统一走 /ajaxfile.php，旧版为 /ajaxm.php，两种都兼容；
+ * 2026-09 改版后 ajax 接口可能是跨域绝对地址（https://apifile.lanzouw.com/ajaxfile.php?file=N），
+ * 也可能是旧的相对路径（/ajaxm.php?file=N），两种都兼容；
  * 同时跳过旧模板中被注释掉的示例行（//url : '/ajaxm.php?file=1',//）
  */
 function extractAjaxFileInfo(
   code: string,
 ): { path: string; fileId: string } | null {
-  const regex = /url\s*:\s*'(\/ajax[a-z]*\.php\?file=)(\d+)/g;
+  const regex =
+    /url\s*:\s*'((?:https?:\/\/[^']*?)?(\/ajax[a-z]*\.php\?file=))(\d+)/g;
   let m: RegExpExecArray | null;
   let result: { path: string; fileId: string } | null = null;
 
@@ -307,7 +313,7 @@ function extractAjaxFileInfo(
     const prefix = code.slice(Math.max(0, m.index - 2), m.index);
 
     if (prefix.includes("//")) continue;
-    result = { path: m[1], fileId: m[2] };
+    result = { path: m[1], fileId: m[3] };
   }
 
   return result;
