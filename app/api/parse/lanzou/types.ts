@@ -41,12 +41,4 @@ export interface LanzouClient {
     data: unknown,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse>;
-  headWithAcwRetry(
-    url: string,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse>;
-  handleAcwChallenge(data: unknown): boolean;
-  applyAcwCookieFromHtml(html: string): boolean;
-  resetCookies(): void;
-  getCookies(): string;
 }

@@ -10,7 +10,8 @@ function isAcwChallenge(body: unknown): boolean {
  */
 function calcAcwScV2FromHtml(html: string): string | null {
   if (!html || typeof html !== "string") return null;
-  const arg1Match = html.match(/arg1='(.*?)'/);
+  // 挑战页形如 var arg1='<40 位十六进制>';，算法按 40 字节定长处理，非定长的 arg1 会算出无效 cookie
+  const arg1Match = html.match(/var\s+arg1=['"]([0-9a-f]{40})['"]/i);
   if (!arg1Match || !arg1Match[1]) return null;
   return acw_sc_v2_simple(arg1Match[1]);
 }
