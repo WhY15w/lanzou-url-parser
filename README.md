@@ -93,6 +93,12 @@ pnpm start
 }
 ```
 
+## 🙏 致谢
+
+- [hanximeng/LanzouAPI](https://github.com/hanximeng/LanzouAPI)（MIT）：CDN 直链解析参考了该实现——对 `/file/` 跳转地址先解开阿里云 ESA 挑战页（`var arg1` → `acw_sc__v2`），再取 302 响应里的 `Location` 作为最终直链，全程不跟随跳转。
+
+同系列实现：[lanzou](https://github.com/WhY15w/lanzou)（Hono API 服务）、[lanzou-url-parser-nuxt](https://github.com/WhY15w/lanzou-url-parser-nuxt)（Nuxt 版）。
+
 ## 📄 许可证
 
 本项目仅用于学习交流，请勿用于非法用途。
