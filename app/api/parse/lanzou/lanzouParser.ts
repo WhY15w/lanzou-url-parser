@@ -289,6 +289,9 @@ function matchOne(text: string, regex: RegExp): string | null {
  * 新版页面统一走 /ajaxfile.php，旧版为 /ajaxm.php，两种都兼容；
  * 2026-09 改版后 ajax 接口可能是跨域绝对地址（https://apifile.lanzouw.com/ajaxfile.php?file=N），
  * 也可能是旧的相对路径（/ajaxm.php?file=N），两种都兼容；
+ * 2026-09 下旬改版后 $.ajax 的 url 改为引用变量（url : dom_ajaxs），接口地址以
+ * 字符串字面量赋给变量（var domain1 = 'https://apifile.woozooo.com/ajaxfile.php?file=N'），
+ * 此时从变量赋值里取（页面上 domain1 在前，是浏览器正常加载 killdnsweb.js 后使用的地址）；
  * 同时跳过旧模板中被注释掉的示例行（//url : '/ajaxm.php?file=1',//）
  */
 function extractAjaxFileInfo(
@@ -306,7 +309,20 @@ function extractAjaxFileInfo(
     result = { path: m[1], fileId: m[3] };
   }
 
-  return result;
+  if (result) return result;
+
+  const varRegex =
+    /[A-Za-z_$][\w$]*\s*=\s*'((?:https?:\/\/[^']*?)?(\/ajax[a-z]*\.php\?file=))(\d+)'/g;
+  let varMatch: RegExpExecArray | null;
+
+  while ((varMatch = varRegex.exec(code)) !== null) {
+    const prefix = code.slice(Math.max(0, varMatch.index - 2), varMatch.index);
+
+    if (prefix.includes("//")) continue;
+    return { path: varMatch[1], fileId: varMatch[3] };
+  }
+
+  return null;
 }
 
 /**
